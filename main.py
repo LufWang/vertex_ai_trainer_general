@@ -43,7 +43,7 @@ parser.add_argument('--focused_label', dest='focused_label', nargs='+',
                         help='focused laels for for multiclf --optional -- will be ignored if mode==binary')
 
 parser.add_argument('--EPOCH', dest='EPOCH', 
-                        help='how many epochs to run', default=4)
+                        help='how many epochs to run', default=1)
 
 parser.add_argument('--learning_rate', dest='learning_rate', 
                         help='how many epochs to run', default=0.0001)
@@ -54,9 +54,14 @@ parser.add_argument('--weight_decay', dest='weight_decay',
 parser.add_argument('--warmup_steps', dest='warmup_steps', 
                         help='how many epochs to run', default=0)
 
+parser.add_argument('--save_mode', dest='save_mode', 
+                        help='save whole model, just body or just head', choices=['body-only', 'head-only'])
+
 
 
 args = parser.parse_args()
+
+pipeline_config['save_mode'] = args.save_mode
 
 prep_log(False)
 WORKER = '[bold cyan]PIPELINE MAIN[/bold cyan]'
@@ -77,10 +82,6 @@ val_file_path = os.path.join(dataset_dir, f'DFD-data-{dataset_version}/val.csv')
 
 
 
-## List out config 
-logging.info(f'{WORKER}: Training Config:')
-for key in training_config:
-    logging.info(f'{WORKER}: {key}: {training_config[key]}')
 
 logging.info(f'{WORKER}: Dataset Config:')
 for key in dataset_config:
@@ -108,11 +109,15 @@ logging.info(f'{WORKER}: Val Data Shape: {df_val.shape}')
 # Training pipeline
 
 training_config['EPOCHS'] = args.EPOCH
-training_config['lr'] = args.learning_rate
-training_config['weight_decay'] = args.weight_decay
-training_config['warmup_steps'] = args.warmup_steps
+training_config['LR'] = args.learning_rate
+training_config['WEIGHT_DECAY'] = args.weight_decay
+training_config['WARMUP_STEPS'] = args.warmup_steps
 
 
+## List out config 
+logging.info(f'{WORKER}: Training Config:')
+for key in training_config:
+    logging.info(f'{WORKER}: {key}: {training_config[key]}')
 
 input_dict = {
     **training_config, 

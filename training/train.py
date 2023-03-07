@@ -1,8 +1,8 @@
 # import pacakages
-from pytorch_nlp_pipeline.ModelModule import BertModule, BioGPTModule
-from pytorch_nlp_pipeline.DataModule import ClfDataset, split_data_w_sample
-from pytorch_nlp_pipeline.text_clf import Trainer
-from pytorch_nlp_pipeline.utils import get_config, save_model
+from pytorch_nlp_pipeline.model import PytorchNlpModel
+from pytorch_nlp_pipeline.dataset import ClfDataset
+from pytorch_nlp_pipeline.classification import Trainer
+from pytorch_nlp_pipeline.utils import save_model
 import numpy as np
 import os
 import json
@@ -30,22 +30,27 @@ def run_training_pipeline(df, df_val, text_col, label_col, **kwargs):
 
     pretrained_path = os.path.join(pretrained_dir, pretrained_model_name)
     
+    ## Evaluate config
     save_path = kwargs['SAVE_PATH']
     save_metric = kwargs['SAVE_METRIC']
     multiclass_average = kwargs['MULTICLASS_AVERAGE']
     watch_metrics = kwargs['WATCH_METRICS']
     eval_freq = kwargs['EVAL_FREQ']
-    epochs = kwargs['EPOCHS']
-    lr = kwargs['LR_RANGE']
-    weight_decay = kwargs['WEIGHT_DECAY_RANGE']
-    warmup_steps = kwargs['WARMUP_STEPS']
-    save_threshold = kwargs['SAVE_THRESHOLD']
-
     focused_indexes = kwargs['focused_indexes']
     labels_to_indexes = kwargs['labels_to_indexes']
+    save_mode = kwargs['save_mode']
 
-    ModelModule = kwargs['MODELMODULE']
+    ## Params
+    epochs = kwargs['EPOCHS']
+    lr = kwargs['LR']
+    weight_decay = kwargs['WEIGHT_DECAY']
+    warmup_steps = kwargs['WARMUP_STEPS']
+
+
+
+    # Model config
     freeze_pretrained = kwargs['FREEZE_PRETRAINED']
+    head_hidden_size = kwargs['HEAD_HIDDEN_SIZE']
 
 
 
@@ -83,7 +88,14 @@ def run_training_pipeline(df, df_val, text_col, label_col, **kwargs):
                             )
 
 
-    clf = ModelModule(pretrained_path=pretrained_path, freeze_pretrained=freeze_pretrained)
+    clf = PytorchNlpModel(
+                        pretrained_type='BERT',
+                        pretrained_path=pretrained_path,
+                        device=device,
+                        n_classes=len(labels_to_indexes),
+                        freeze_pretrained=freeze_pretrained,
+                        head_hidden_size=head_hidden_size
+                        )
 
 
     BertTrainer = Trainer(device)
@@ -96,7 +108,7 @@ def run_training_pipeline(df, df_val, text_col, label_col, **kwargs):
         "lr": lr,
         "weight_decay": weight_decay,
         "EPOCHS": epochs,
-        "warmip_steps": warmup_steps
+        "warmup_steps": warmup_steps
     }
 
 
@@ -104,20 +116,19 @@ def run_training_pipeline(df, df_val, text_col, label_col, **kwargs):
     
     logging.info(f'{WORKER}: End of Training Result:')
     logging.info(f'{WORKER}: {model_info}')
-    val_score = model_info['val_score']                       
 
-    if val_score > save_threshold:
         
-        model_info['pretrained_model_name'] = pretrained_model_name
+    model_info['pretrained_model_name'] = pretrained_model_name
+    model_info['head_hidden_size'] = head_hidden_size
 
-        files = {
-        'hyperparameters.json': params,
-        'model_info.json': model_info,
-        'labels_to_indexes.json': labels_to_indexes,
-        'indexes_to_labels.json': train_data.indexes_to_labels
-                    
-                }
-        save_model(model, clf.tokenizer, label_col, save_path, files)
+    files = {
+    'hyperparameters.json': params,
+    'model_info.json': model_info,
+    'labels_to_indexes.json': labels_to_indexes,
+    'indexes_to_labels.json': train_data.indexes_to_labels
+                
+            }
+    save_model(model, clf.tokenizer, label_col, save_path, files, save_mode)
 
-        #TODO log saved results?
-        logging.info(f'{WORKER}: Model Saved -- Val Score {val_score}')
+    val_score = model_info['val_score']
+    logging.info(f'{WORKER}: Model Saved -- Val Score {val_score}')
