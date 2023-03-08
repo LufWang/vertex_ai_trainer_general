@@ -43,25 +43,28 @@ parser.add_argument('--focused_label', dest='focused_label', nargs='+',
                         help='focused laels for for multiclf --optional -- will be ignored if mode==binary')
 
 parser.add_argument('--EPOCH', dest='EPOCH', 
-                        help='how many epochs to run', default=1)
+                        help='how many epochs to run', default=1, type=int)
 
 parser.add_argument('--learning_rate', dest='learning_rate', 
-                        help='how many epochs to run', default=0.0001)
+                        help='how many epochs to run', default=0.0001, type=float)
 
 parser.add_argument('--weight_decay', dest='weight_decay', 
-                        help='how many epochs to run', default=0.001)
+                        help='how many epochs to run', default=0.001, type=float)
 
 parser.add_argument('--warmup_steps', dest='warmup_steps', 
-                        help='how many epochs to run', default=0)
+                        help='how many epochs to run', default=0, type=int)
 
 parser.add_argument('--save_mode', dest='save_mode', 
                         help='save whole model, just body or just head', choices=['body-only', 'head-only'])
 
+parser.add_argument('--hyper_tune', dest='hyper_tune', 
+                        help='whether run vertex ai hypertune', default=False, type=bool)
 
 
 args = parser.parse_args()
 
 pipeline_config['save_mode'] = args.save_mode
+pipeline_config['hyper_tune'] = args.hyper_tune
 
 prep_log(False)
 WORKER = '[bold cyan]PIPELINE MAIN[/bold cyan]'
@@ -70,15 +73,17 @@ WORKER = '[bold cyan]PIPELINE MAIN[/bold cyan]'
 RANDOM_SEED = training_config['RANDOM_SEED']
 np.random.seed(RANDOM_SEED)
 torch.manual_seed(RANDOM_SEED)
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 training_config['DEVICE'] = device
 
 
 # file names
-dataset_version = dataset_config['version']
 dataset_dir = dataset_config['dataset_dir_path']
-train_file_path = os.path.join(dataset_dir, f'DFD-data-{dataset_version}/train.csv')
-val_file_path = os.path.join(dataset_dir, f'DFD-data-{dataset_version}/val.csv')
+train_file_name = dataset_config['train_file_name']
+val_file_name = dataset_config['val_file_name']
+
+train_file_path = os.path.join(dataset_dir, train_file_name)
+val_file_path = os.path.join(dataset_dir, val_file_name)
 
 
 
