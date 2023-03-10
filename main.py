@@ -1,7 +1,6 @@
 import sys
 import argparse
 
-
 # import pacakages
 import torch
 import numpy as np
@@ -17,8 +16,6 @@ from training.data_preprocess import preprocess_binary_clf, preprocess_multi_clf
 
 import logging
 from utils import prep_log
-
-
 
 
 #################################################################################################################
@@ -42,7 +39,7 @@ parser.add_argument('--label', dest='label',
 parser.add_argument('--focused_label', dest='focused_label', nargs='+',
                         help='focused laels for for multiclf --optional -- will be ignored if mode==binary')
 
-parser.add_argument('--EPOCH', dest='EPOCH', 
+parser.add_argument('--epoch', dest='EPOCH', 
                         help='how many epochs to run', default=1, type=int)
 
 parser.add_argument('--learning_rate', dest='learning_rate', 
@@ -59,6 +56,9 @@ parser.add_argument('--save_mode', dest='save_mode',
 
 parser.add_argument('--hyper_tune', dest='hyper_tune', 
                         help='whether run vertex ai hypertune', default=False, type=bool)
+
+parser.add_argument('--freeze_pretrained', dest='freeze_pretrained', 
+                        help='whether freeze pretrained part', default=False, type=bool)
 
 
 args = parser.parse_args()
@@ -78,15 +78,25 @@ training_config['DEVICE'] = device
 
 
 # file names
-dataset_dir = dataset_config['dataset_dir_path']
-train_file_name = dataset_config['train_file_name']
-val_file_name = dataset_config['val_file_name']
+dataset_dir = dataset_config["DATASET_DIR"]
+train_file_name = dataset_config["TRAIN_FILE_PATH"]
+val_file_name = dataset_config["VAL_FILE_PATH"]
 
 train_file_path = os.path.join(dataset_dir, train_file_name)
 val_file_path = os.path.join(dataset_dir, val_file_name)
 
+# add training configs
+training_config['EPOCHS'] = args.EPOCH
+training_config['LR'] = args.learning_rate
+training_config['WEIGHT_DECAY'] = args.weight_decay
+training_config['WARMUP_STEPS'] = args.warmup_steps
+training_config['FREEZE_PRETRAINED'] = args.freeze_pretrained
 
 
+## List out config 
+logging.info(f'{WORKER}: Training Config:')
+for key in training_config:
+    logging.info(f'{WORKER}: {key}: {training_config[key]}')
 
 logging.info(f'{WORKER}: Dataset Config:')
 for key in dataset_config:
@@ -108,27 +118,13 @@ logging.info(f'{WORKER}: Train Data Shape: {df_train.shape}')
 logging.info(f'{WORKER}: Val Data Shape: {df_val.shape}')
 
 
-
-
 #############################################################################################################################
 # Training pipeline
-
-training_config['EPOCHS'] = args.EPOCH
-training_config['LR'] = args.learning_rate
-training_config['WEIGHT_DECAY'] = args.weight_decay
-training_config['WARMUP_STEPS'] = args.warmup_steps
-
-
-## List out config 
-logging.info(f'{WORKER}: Training Config:')
-for key in training_config:
-    logging.info(f'{WORKER}: {key}: {training_config[key]}')
 
 input_dict = {
     **training_config, 
     **pipeline_config
     }
-
 
 if args.mode == 'binary':
     if args.label:
@@ -137,7 +133,6 @@ if args.mode == 'binary':
         input_dict['labels_to_indexes'] = labels_to_indexes
         input_dict['focused_indexes'] = None
         train.run_training_pipeline(df_train, df_val, args.text_col, label_col, **input_dict)
-    
     else:
         logging.info(f'{WORKER}: Need to pass in --label when --mode==binary')
 
@@ -148,5 +143,3 @@ elif args.mode == 'multi':
     input_dict['labels_to_indexes'] = labels_to_indexes
     input_dict['focused_indexes'] = focused_indexes
     train.run_training_pipeline(df_train, df_val, args.text_col, label_col, **input_dict)
-
-
