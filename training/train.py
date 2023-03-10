@@ -7,13 +7,10 @@ import numpy as np
 import os
 import json
 import hypertune
-
 import logging
+
+
 WORKER = '[bold cyan]PIPELINE TRAIN[/bold cyan]'
-
-
-
-
 
 
 def run_training_pipeline(df, df_val, text_col, label_col, **kwargs):
@@ -48,26 +45,17 @@ def run_training_pipeline(df, df_val, text_col, label_col, **kwargs):
     weight_decay = kwargs['WEIGHT_DECAY']
     warmup_steps = kwargs['WARMUP_STEPS']
 
-
-
     # Model config
     freeze_pretrained = kwargs['FREEZE_PRETRAINED']
     head_hidden_size = kwargs['HEAD_HIDDEN_SIZE']
 
-
-
     eval_config = {
-            "save_metric": save_metric['metric_func'],
+            "save_metric": save_metric,
             "multiclass_average": multiclass_average,
             "focused_indexes": focused_indexes,
             "eval_freq": eval_freq,
             "watch_list": watch_metrics
             }
-
-    
-    
-
-
 
     train_data = ClfDataset(
                                 df,
@@ -89,7 +77,6 @@ def run_training_pipeline(df, df_val, text_col, label_col, **kwargs):
                                 RANDOM_SEED
                             )
 
-
     clf = PytorchNlpModel(
                         pretrained_type='BERT',
                         pretrained_path=pretrained_path,
@@ -99,9 +86,7 @@ def run_training_pipeline(df, df_val, text_col, label_col, **kwargs):
                         head_hidden_size=head_hidden_size
                         )
 
-
     BertTrainer = Trainer(device)
-
 
     ##########
     # Training
@@ -113,32 +98,29 @@ def run_training_pipeline(df, df_val, text_col, label_col, **kwargs):
         "warmup_steps": warmup_steps
     }
 
-
     model, model_info = BertTrainer.train(clf, train_data, val_data, params, eval_config)
     
     logging.info(f'{WORKER}: End of Training Result:')
     logging.info(f'{WORKER}: {model_info}')
 
-        
     model_info['pretrained_model_name'] = pretrained_model_name
     model_info['head_hidden_size'] = head_hidden_size
 
     files = {
-    'hyperparameters.json': params,
-    'model_info.json': model_info,
-    'labels_to_indexes.json': labels_to_indexes,
-    'indexes_to_labels.json': train_data.indexes_to_labels
-                
-            }
+        'hyperparameters.json': params,
+        'model_info.json': model_info,
+        'labels_to_indexes.json': labels_to_indexes,
+        'indexes_to_labels.json': train_data.indexes_to_labels
+    }
     save_model(model, clf.tokenizer, label_col, save_path, files, save_mode)
 
     val_score = model_info['val_score']
     logging.info(f'{WORKER}: Model Saved -- Val Score {val_score}')
     
     if hypertune:
-        logging.info(f'{WORKER}:Reporting score to hypertune -- metric_name:{save_metric["metric_name"]} Score{val_score}')
+        logging.info(f'{WORKER}:Reporting score to hypertune -- metric_name:{save_metric} Score{val_score}')
         hpt = hypertune.HyperTune()
         hpt.report_hyperparameter_tuning_metric(
-            hyperparameter_metric_tag=save_metric['metric_name'],
+            hyperparameter_metric_tag=save_metric,
             metric_value=val_score,
             global_step=model_info['epoch'])
