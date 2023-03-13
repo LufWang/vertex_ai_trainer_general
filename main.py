@@ -9,13 +9,15 @@ import os
 from datetime import datetime
 import json
 
-from config import training_config, dataset_config, pipeline_config
 from data_fetch import get_train_test
 from training import train
 from training.data_preprocess import preprocess_binary_clf, preprocess_multi_clf
 
 import logging
 from utils import prep_log
+
+from dotenv import load_dotenv
+
 
 
 #################################################################################################################
@@ -60,8 +62,20 @@ parser.add_argument('--hyper_tune', dest='hyper_tune',
 parser.add_argument('--freeze_pretrained', dest='freeze_pretrained', 
                         help='whether freeze pretrained part', default=False, type=bool)
 
+parser.add_argument('--env', dest='env', 
+                        help='path to .env file that stores env variables', type=str)
+
 
 args = parser.parse_args()
+
+## import env variables
+if args.env:
+    load_dotenv(args.env)
+else:
+    load_dotenv()
+
+from config import training_config, dataset_config, pipeline_config
+
 
 pipeline_config['save_mode'] = args.save_mode
 pipeline_config['hyper_tune'] = args.hyper_tune
