@@ -24,7 +24,7 @@ training_config = {
     "PRETRAINED_DIR": os.getenv('PRETRAINED_DIR'),
     "PRETRAINED_MODEL_NAME": os.getenv("PRETRAINED_MODEL_NAME", 'pretrained_bioclinical_bert_on_all_dtree'),
     "EVAL_FREQ": os.getenv('EVAL_FREQ', 1),
-    "HEAD_HIDDEN_SIZE": os.getenv('HEAD_HIDDEN_SIZE', 384)
+    "HEAD_HIDDEN_LAYERS": os.getenv('HEAD_HIDDEN_LAYERS', [384, 'relu'])
 }
 
 dataset_config = {

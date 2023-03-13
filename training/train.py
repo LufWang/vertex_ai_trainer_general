@@ -37,7 +37,7 @@ def run_training_pipeline(df, df_val, text_col, label_col, **kwargs):
     focused_indexes = kwargs['focused_indexes']
     labels_to_indexes = kwargs['labels_to_indexes']
     save_mode = kwargs['save_mode']
-    hyper_tune = kwargs['hyper_tune']
+    hypertune = kwargs['hyper_tune']
 
     ## Params
     epochs = kwargs['EPOCHS']
@@ -47,7 +47,7 @@ def run_training_pipeline(df, df_val, text_col, label_col, **kwargs):
 
     # Model config
     freeze_pretrained = kwargs['FREEZE_PRETRAINED']
-    head_hidden_size = kwargs['HEAD_HIDDEN_SIZE']
+    head_hidden_layers = kwargs['HEAD_HIDDEN_LAYERS']
 
     eval_config = {
             "save_metric": save_metric,
@@ -82,7 +82,7 @@ def run_training_pipeline(df, df_val, text_col, label_col, **kwargs):
                         pretrained_path=pretrained_path,
                         n_classes=len(labels_to_indexes),
                         freeze_pretrained=freeze_pretrained,
-                        head_hidden_layers=head_hidden_size
+                        head_hidden_layers=head_hidden_layers
                         )
 
     BertTrainer = Trainer(device)
