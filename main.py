@@ -16,7 +16,7 @@ from training.data_preprocess import preprocess_binary_clf, preprocess_multi_clf
 import logging
 from utils import prep_log
 
-from dotenv import load_dotenv
+from config import get_config
 
 
 
@@ -70,17 +70,19 @@ args = parser.parse_args()
 
 ## import env variables
 if args.env:
-    load_dotenv(args.env)
+    env_path = args.env
 else:
-    load_dotenv()
+    env_path = '.env'
 
-from config import training_config, dataset_config, pipeline_config
+
+LOG_DIR, training_config, dataset_config, pipeline_config = get_config(env_path)
+
 
 
 pipeline_config['save_mode'] = args.save_mode
 pipeline_config['hyper_tune'] = args.hyper_tune
 
-prep_log(False)
+prep_log(LOG_DIR)
 WORKER = '[bold cyan]PIPELINE MAIN[/bold cyan]'
 
 ### Setting Variables

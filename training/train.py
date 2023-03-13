@@ -56,6 +56,7 @@ def run_training_pipeline(df, df_val, text_col, label_col, **kwargs):
             "eval_freq": eval_freq,
             "watch_list": watch_metrics
             }
+    print(head_hidden_layers)
 
     train_data = ClfDataset(
                                 df,

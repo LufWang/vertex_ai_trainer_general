@@ -3,7 +3,6 @@ import logging
 import rich
 from rich.logging import RichHandler
 from datetime import datetime
-from config import LOG_DIR
 import os
 
 def suspend_logging(func):
@@ -16,7 +15,7 @@ def suspend_logging(func):
             logging.disable(logging.NOTSET)
     return inner
 
-def prep_log(is_debug):
+def prep_log(LOG_DIR, is_debug=False):
     WORKER = '[bold]LOGGER[/bold]'
     now = datetime.now()
     time_stamp = now.strftime("%Y-%m-%d-%H-%M-%S")
