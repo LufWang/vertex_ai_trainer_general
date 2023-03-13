@@ -1,7 +1,5 @@
-from dotenv import load_dotenv
 import os
 
-load_dotenv()
 
 def parse_env_bool(var_val):
     """
