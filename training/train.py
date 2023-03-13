@@ -80,10 +80,9 @@ def run_training_pipeline(df, df_val, text_col, label_col, **kwargs):
     clf = PytorchNlpModel(
                         pretrained_type='BERT',
                         pretrained_path=pretrained_path,
-                        device=device,
                         n_classes=len(labels_to_indexes),
                         freeze_pretrained=freeze_pretrained,
-                        head_hidden_size=head_hidden_size
+                        head_hidden_layers=head_hidden_size
                         )
 
     BertTrainer = Trainer(device)
