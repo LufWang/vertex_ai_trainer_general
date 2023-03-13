@@ -2,7 +2,6 @@ import os
 from dotenv import load_dotenv
 
 
-print(os.getenv('LOG_DIR'))
 
 
 def parse_env_bool(var_val):

@@ -56,7 +56,6 @@ def run_training_pipeline(df, df_val, text_col, label_col, **kwargs):
             "eval_freq": eval_freq,
             "watch_list": watch_metrics
             }
-    print(head_hidden_layers)
 
     train_data = ClfDataset(
                                 df,
@@ -104,7 +103,7 @@ def run_training_pipeline(df, df_val, text_col, label_col, **kwargs):
     logging.info(f'{WORKER}: {model_info}')
 
     model_info['pretrained_model_name'] = pretrained_model_name
-    model_info['head_hidden_size'] = head_hidden_size
+    model_info['head_hidden_layers'] = head_hidden_layers
 
     files = {
         'hyperparameters.json': params,
