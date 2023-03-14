@@ -37,7 +37,7 @@ def run_training_pipeline(df, df_val, text_col, label_col, **kwargs):
     focused_indexes = kwargs['focused_indexes']
     labels_to_indexes = kwargs['labels_to_indexes']
     save_mode = kwargs['save_mode']
-    hypertune = kwargs['hyper_tune']
+    hyper_tune = kwargs['hyper_tune']
 
     ## Params
     epochs = kwargs['EPOCHS']
@@ -116,7 +116,7 @@ def run_training_pipeline(df, df_val, text_col, label_col, **kwargs):
     val_score = model_info['val_score']
     logging.info(f'{WORKER}: Model Saved -- Val Score {val_score}')
     
-    if hypertune:
+    if hyper_tune:
         logging.info(f'{WORKER}:Reporting score to hypertune -- metric_name:{save_metric} Score{val_score}')
         hpt = hypertune.HyperTune()
         hpt.report_hyperparameter_tuning_metric(

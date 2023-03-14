@@ -16,7 +16,7 @@ from training.data_preprocess import preprocess_binary_clf, preprocess_multi_clf
 import logging
 from utils import prep_log
 
-from config import get_config
+from config import get_config, parse_env_bool
 
 
 
@@ -57,16 +57,17 @@ parser.add_argument('--save_mode', dest='save_mode',
                         help='save whole model, just body or just head', choices=['body-only', 'head-only'])
 
 parser.add_argument('--hyper_tune', dest='hyper_tune', 
-                        help='whether run vertex ai hypertune', default=False, type=bool)
+                        help='whether run vertex ai hypertune', default=False, type=parse_env_bool)
 
 parser.add_argument('--freeze_pretrained', dest='freeze_pretrained', 
-                        help='whether freeze pretrained part', default=False, type=bool)
+                        help='whether freeze pretrained part', default=False, type=parse_env_bool)
 
 parser.add_argument('--env', dest='env', 
                         help='path to .env file that stores env variables', type=str)
 
 
 args = parser.parse_args()
+
 
 ## import env variables
 if args.env:

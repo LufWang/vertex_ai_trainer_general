@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+import argparse
 
 
 
@@ -12,8 +13,10 @@ def parse_env_bool(var_val):
     """
     if var_val is True or str(var_val).lower() in ('true', 't', 'yes', 'y', '1'):
         return True
-    else:
+    elif var_val.lower() in ('no', 'false', 'f', 'n', '0'):
         return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
     
 
 def get_config(env_path):
