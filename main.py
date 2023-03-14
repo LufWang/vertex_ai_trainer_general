@@ -18,6 +18,8 @@ from utils import prep_log
 
 from config import get_config, parse_env_bool
 
+import shortuuid
+
 
 
 #################################################################################################################
@@ -69,6 +71,9 @@ parser.add_argument('--env', dest='env',
 args = parser.parse_args()
 
 
+model_id = shortuuid.ShortUUID().random(length=12)
+
+
 ## import env variables
 if args.env:
     env_path = args.env
@@ -83,7 +88,7 @@ LOG_DIR, training_config, dataset_config, pipeline_config = get_config(env_path)
 pipeline_config['save_mode'] = args.save_mode
 pipeline_config['hyper_tune'] = args.hyper_tune
 
-prep_log(LOG_DIR)
+prep_log(LOG_DIR, model_id)
 WORKER = '[bold cyan]PIPELINE MAIN[/bold cyan]'
 
 ### Setting Variables
@@ -142,6 +147,8 @@ input_dict = {
     **training_config, 
     **pipeline_config
     }
+
+input_dict['model_id'] = model_id
 
 if args.mode == 'binary':
     if args.label:

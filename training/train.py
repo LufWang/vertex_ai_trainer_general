@@ -48,6 +48,7 @@ def run_training_pipeline(df, df_val, text_col, label_col, **kwargs):
     # Model config
     freeze_pretrained = kwargs['FREEZE_PRETRAINED']
     head_hidden_layers = kwargs['HEAD_HIDDEN_LAYERS']
+    model_id = kwargs['model_id']
 
     eval_config = {
             "save_metric": save_metric,
@@ -111,7 +112,7 @@ def run_training_pipeline(df, df_val, text_col, label_col, **kwargs):
         'labels_to_indexes.json': labels_to_indexes,
         'indexes_to_labels.json': train_data.indexes_to_labels
     }
-    save_model(model, clf.tokenizer, label_col, save_path, files, save_mode)
+    save_model(model, model_id,clf.tokenizer, label_col, save_path, files, save_mode)
 
     val_score = model_info['val_score']
     logging.info(f'{WORKER}: Model Saved -- Val Score {val_score}')

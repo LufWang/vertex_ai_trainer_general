@@ -15,11 +15,11 @@ def suspend_logging(func):
             logging.disable(logging.NOTSET)
     return inner
 
-def prep_log(LOG_DIR, is_debug=False):
+def prep_log(LOG_DIR, model_id, is_debug=False):
     WORKER = '[bold]LOGGER[/bold]'
     now = datetime.now()
     time_stamp = now.strftime("%Y-%m-%d-%H-%M-%S")
-    log_path = os.path.join(LOG_DIR, "RUN_"+str(time_stamp)+'.log')
+    log_path = os.path.join(LOG_DIR, "RUN_"+str(time_stamp)+'_'+model_id+'.log')
     #handlers = [logging.StreamHandler(sys.stdout)]
     rich_handler = RichHandler(markup=True, highlighter=rich.highlighter.NullHighlighter())
     if is_debug:
