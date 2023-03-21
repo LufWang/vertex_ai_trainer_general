@@ -10,7 +10,7 @@ import hypertune
 import logging
 
 
-WORKER = '[bold cyan]PIPELINE TRAIN[/bold cyan]'
+WORKER = 'PIPELINE TRAIN'
 
 
 def run_training_pipeline(df, df_val, text_col, label_col, **kwargs):

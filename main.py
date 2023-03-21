@@ -89,7 +89,7 @@ pipeline_config['save_mode'] = args.save_mode
 pipeline_config['hyper_tune'] = args.hyper_tune
 
 prep_log(LOG_DIR, model_id)
-WORKER = '[bold cyan]PIPELINE MAIN[/bold cyan]'
+WORKER = 'PIPELINE MAIN'
 
 ### Setting Variables
 RANDOM_SEED = training_config['RANDOM_SEED']

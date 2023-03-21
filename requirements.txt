@@ -57,3 +57,4 @@ rich
 gcsfs
 fsspec
 cloudml-hypertune
+google-cloud-logging
