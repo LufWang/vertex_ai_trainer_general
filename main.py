@@ -20,7 +20,12 @@ from config import get_config, parse_env_bool
 
 import shortuuid
 
+#######
+# Set up Logging
+########
+logging.basicConfig(encoding='utf-8', level=logging.DEBUG)
 
+  
 
 #################################################################################################################
 ## Arguments
@@ -55,6 +60,9 @@ parser.add_argument('--weight_decay', dest='weight_decay',
 parser.add_argument('--warmup_steps', dest='warmup_steps', 
                         help='how many epochs to run', default=0, type=int)
 
+parser.add_argument('--batch_size', dest='batch_size', 
+                        help='batch size', default=16, type=int)
+
 parser.add_argument('--save_mode', dest='save_mode', 
                         help='save whole model, just body or just head', choices=['body-only', 'head-only'])
 
@@ -66,6 +74,9 @@ parser.add_argument('--freeze_pretrained', dest='freeze_pretrained',
 
 parser.add_argument('--env', dest='env', 
                         help='path to .env file that stores env variables', type=str)
+
+parser.add_argument('--model_save_name', dest='model_save_name', 
+                        help='name for the directory to save model files', type=str)
 
 
 args = parser.parse_args()
@@ -87,8 +98,9 @@ LOG_DIR, training_config, dataset_config, pipeline_config = get_config(env_path)
 
 pipeline_config['save_mode'] = args.save_mode
 pipeline_config['hyper_tune'] = args.hyper_tune
+pipeline_config['model_save_name'] = args.model_save_name
 
-prep_log(LOG_DIR, model_id)
+# prep_log(LOG_DIR, model_id)
 WORKER = 'PIPELINE MAIN'
 
 ### Setting Variables
@@ -113,6 +125,7 @@ training_config['LR'] = args.learning_rate
 training_config['WEIGHT_DECAY'] = args.weight_decay
 training_config['WARMUP_STEPS'] = args.warmup_steps
 training_config['FREEZE_PRETRAINED'] = args.freeze_pretrained
+training_config['BATCH_SIZE'] = args.batch_size
 
 
 ## List out config 
@@ -145,7 +158,8 @@ logging.info(f'{WORKER}: Val Data Shape: {df_val.shape}')
 
 input_dict = {
     **training_config, 
-    **pipeline_config
+    **pipeline_config,
+    **dataset_config
     }
 
 input_dict['model_id'] = model_id
@@ -161,7 +175,7 @@ if args.mode == 'binary':
         logging.info(f'{WORKER}: Need to pass in --label when --mode==binary')
 
 elif args.mode == 'multi':
-    logging.info(f'{WORKER}: Training Multi Clf on {args.label}...')
+    logging.info(f'{WORKER}: Training Multi Clf on {args.label_col}...')
     df_train, df_val, label_col, labels_to_indexes, focused_indexes = preprocess_multi_clf(df_train, df_val, args.label_col, args.focused_label)
 
     input_dict['labels_to_indexes'] = labels_to_indexes

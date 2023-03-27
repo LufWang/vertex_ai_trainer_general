@@ -25,13 +25,12 @@ def get_config(env_path):
     LOG_DIR = os.getenv('LOG_DIR')
 
     training_config = {
-        "RANDOM_SEED": os.getenv('RANDOM_SEED', 42),
-        "BATCH_SIZE": os.getenv('BATCH_SIZE', 16),
-        "MAX_LEN": os.getenv('MAX_LEN', 162),
+        "RANDOM_SEED": int(os.getenv('RANDOM_SEED', 42)),
+        "MAX_LEN": int(os.getenv('MAX_LEN', 162)),
     #  "PRETRAINED_DIR": "/home/ext_wang_lufei_mayo_edu/LFW/Data_Science_Model_Training/gen4/storage/gen4-models/pretrained-models",
         "PRETRAINED_DIR": os.getenv('PRETRAINED_DIR'),
         "PRETRAINED_MODEL_NAME": os.getenv("PRETRAINED_MODEL_NAME", 'pretrained_bioclinical_bert_on_all_dtree'),
-        "EVAL_FREQ": os.getenv('EVAL_FREQ', 1),
+        "EVAL_FREQ": int(os.getenv('EVAL_FREQ', 1)),
         "HEAD_HIDDEN_LAYERS": os.getenv('HEAD_HIDDEN_LAYERS', [384, 'relu'])
     }
 

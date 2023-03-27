@@ -1,6 +1,8 @@
 from functools import wraps
 import logging
 import google.cloud.logging
+import rich
+from rich.logging import RichHandler
 
 from datetime import datetime
 import os
@@ -16,29 +18,21 @@ def suspend_logging(func):
     return inner
 
 def prep_log(LOG_DIR, model_id):
-    # WORKER = '[bold]LOGGER[/bold]'
-    now = datetime.now()
-    time_stamp = now.strftime("%Y-%m-%d-%H-%M-%S")
-    log_path = os.path.join(LOG_DIR, "TRAIN_"+str(time_stamp)+'_'+model_id+'.log')
-    # handlers = [logging.StreamHandler(sys.stdout)]
-    # rich_handler = RichHandler(markup=True, highlighter=rich.highlighter.NullHighlighter())
-    
 
-    client = google.cloud.logging.Client()
+    rich_handler = RichHandler(markup=False, highlighter=rich.highlighter.NullHighlighter())
 
-    # Retrieves a Cloud Logging handler based on the environment
-    # you're running in and integrates the handler with the
-    # Python logging module. By default this captures all logs
-    # at INFO level and higher
-    client.setup_logging()
+    rich_handler.setLevel(logging.INFO)
 
-    logging.basicConfig(filename=log_path, 
-                        encoding='utf-8', 
-                        format="%(message)s",
-                        level=logging.DEBUG)
+    handlers = [rich_handler]
+ 
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=handlers)
 
 
 
     logging.info("Vertex AI Trainer Logger Initiated")
 
-    # logging.info(f"{WORKER}: log path ([green]{log_path}[/green])")
+
+

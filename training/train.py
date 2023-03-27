@@ -38,6 +38,9 @@ def run_training_pipeline(df, df_val, text_col, label_col, **kwargs):
     labels_to_indexes = kwargs['labels_to_indexes']
     save_mode = kwargs['save_mode']
     hyper_tune = kwargs['hyper_tune']
+    model_save_name = kwargs['model_save_name']
+    if not model_save_name:
+        model_save_name = label_col
 
     ## Params
     epochs = kwargs['EPOCHS']
@@ -105,6 +108,9 @@ def run_training_pipeline(df, df_val, text_col, label_col, **kwargs):
 
     model_info['pretrained_model_name'] = pretrained_model_name
     model_info['head_hidden_layers'] = head_hidden_layers
+    model_info['dataset_dir'] = kwargs['DATASET_DIR']
+    model_info['train_file_path'] = kwargs['TRAIN_FILE_PATH']
+    model_info['val_file_path'] = kwargs['VAL_FILE_PATH']
 
     files = {
         'hyperparameters.json': params,
@@ -112,7 +118,7 @@ def run_training_pipeline(df, df_val, text_col, label_col, **kwargs):
         'labels_to_indexes.json': labels_to_indexes,
         'indexes_to_labels.json': train_data.indexes_to_labels
     }
-    save_model(model, model_id,clf.tokenizer, label_col, save_path, files, save_mode)
+    save_model(model, model_id, clf.tokenizer, model_save_name, save_path, files, save_mode)
 
     val_score = model_info['val_score']
     logging.info(f'{WORKER}: Model Saved -- Val Score {val_score}')

@@ -4,7 +4,7 @@ import logging
 import json
 
 
-WORKER = '[bold cyan]PIPELINE DATA PREPROCESS[/bold cyan]'
+WORKER = 'PIPELINE DATA PREPROCESS'
 
 
 def log_label_distribution(df, label_col, top=10):
