@@ -1,0 +1,5 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ 'build', '-t', 'us-central1-docker.pkg.dev/aif-usr-p-digi-front-door-5b2b/shared-aif-artifact-registry-docker-5b2b/vertex-ai-trainer-general', '.' ]
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'us-central1-docker.pkg.dev/aif-usr-p-digi-front-door-5b2b/shared-aif-artifact-registry-docker-5b2b/vertex-ai-trainer-general']
