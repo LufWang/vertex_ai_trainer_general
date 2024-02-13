@@ -75,9 +75,6 @@ parser.add_argument('--freeze_pretrained', dest='freeze_pretrained',
 parser.add_argument('--env', dest='env', 
                         help='path to .env file that stores env variables', type=str)
 
-parser.add_argument('--dataset_path', dest='train_file_path', 
-                        help='train file path ', type=str, required=True)
-
 parser.add_argument('--train_file_path', dest='train_file_path', 
                         help='train file path ', type=str, required=True)
 
