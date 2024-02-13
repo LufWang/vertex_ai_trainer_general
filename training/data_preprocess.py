@@ -25,6 +25,7 @@ def preprocess_binary_clf(df_train, df_val, label_col, label_name):
     df_train[label_name] = np.where(df_train[label_col] == label_name, 1, 0)
     df_val[label_name] = np.where(df_val[label_col] == label_name, 1, 0)
 
+
     label_col = label_name
 
     labels_to_indexes = {
@@ -55,7 +56,9 @@ def preprocess_multi_clf(df_train, df_val, label_col,focused_labels):
     df_val[label_col] = df_val[label_col].apply(lambda x: labels_to_indexes[x])
 
 
-    return df_train, df_val, label_col,labels_to_indexes, focused_indexes
+
+
+    return df_train, df_val, label_col, labels_to_indexes, focused_indexes
 
 
 

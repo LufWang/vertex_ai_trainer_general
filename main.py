@@ -1,28 +1,22 @@
-import sys
 import argparse
 
 # import pacakages
-import torch
 import numpy as np
-from importlib import reload
-import os
-from datetime import datetime
-import json
 
-from data_fetch import get_train_test
+from data_fetch import get_data
 from training import train
 from training.data_preprocess import preprocess_binary_clf, preprocess_multi_clf
 
 import logging
-from utils import prep_log
 
-from config import get_config, parse_env_bool
+from utils import parse_env_bool
 
 import shortuuid
 
 #######
 # Set up Logging
 ########
+WORKER = 'PIPELINE MAIN'
 logging.basicConfig(encoding='utf-8', level=logging.DEBUG)
 
   
@@ -45,10 +39,16 @@ parser.add_argument('--label_col', dest='label_col',
 parser.add_argument('--label', dest='label', 
                         help='Required if mode==binary, will train binary for this label')
 
-parser.add_argument('--focused_label', dest='focused_label', nargs='+',
+parser.add_argument('--focused_label', dest='focused_label', action='append',
                         help='focused laels for for multiclf --optional -- will be ignored if mode==binary')
 
-parser.add_argument('--epoch', dest='EPOCH', 
+parser.add_argument('--pretrained_path', dest='pretrained_path',
+                        help='path to folder that stores the pretrained model', required=True)
+
+parser.add_argument('--pretrained_type', dest='pretrained_type',
+                        help='type of pretrained model - BERT/Biogpt/ALBERT ', default='BERT')
+
+parser.add_argument('--num_epochs', dest='num_epochs', 
                         help='how many epochs to run', default=1, type=int)
 
 parser.add_argument('--learning_rate', dest='learning_rate', 
@@ -75,79 +75,67 @@ parser.add_argument('--freeze_pretrained', dest='freeze_pretrained',
 parser.add_argument('--env', dest='env', 
                         help='path to .env file that stores env variables', type=str)
 
-parser.add_argument('--model_save_name', dest='model_save_name', 
-                        help='name for the directory to save model files', type=str)
+parser.add_argument('--dataset_path', dest='train_file_path', 
+                        help='train file path ', type=str, required=True)
+
+parser.add_argument('--train_file_path', dest='train_file_path', 
+                        help='train file path ', type=str, required=True)
+
+parser.add_argument('--val_file_path', dest='val_file_path', 
+                        help='val file path ', type=str, required=True)
+
+parser.add_argument('--save_path', dest='save_path', 
+                        help='save path for model artifacts', type=str, required=False)
+
+parser.add_argument('--eval_freq', dest='eval_freq', 
+                        help='eval frequency per epoch', type=int, default=1)
+
+parser.add_argument('--max_len', dest='max_len', 
+                        help='max length for each text input', type=int, default=162)
+
+parser.add_argument('--random_seed', dest='random_seed', 
+                        help='save path for model artifacts', type=int, default=42)
+
+parser.add_argument('--save_metric', dest='save_metric', 
+                        help='save metric for checkpointing models', type=str, default='f1')
+
+parser.add_argument('--multiclass_average', dest='multiclass_average', 
+                        help='average method to use if calculating metric for multiclass', type=str, default='weighted')
+
+parser.add_argument('--model_cat_uid', dest='model_cat_uid', 
+                        help='trained model category unique identifier', type=str, required=False)
+
+parser.add_argument('--job_id', dest='job_id', 
+                        help='Option to pass in job id to be put in to BQ (Custom Assigned - not the GCP job id)', type=str, required=False)
+
+parser.add_argument('--bq_table', dest='bq_table', 
+                        help='bq table name to save trained model info', type=str, required=False)
+
+parser.add_argument('--dataset_version', dest='dataset_version', 
+                        help='dataset version identifier', type=str, required=True)
 
 
 args = parser.parse_args()
 
 
-model_id = shortuuid.ShortUUID().random(length=12)
-
-
-## import env variables
-if args.env:
-    env_path = args.env
-else:
-    env_path = '.env'
-
-
-LOG_DIR, training_config, dataset_config, pipeline_config = get_config(env_path)
-
-
-
-pipeline_config['save_mode'] = args.save_mode
-pipeline_config['hyper_tune'] = args.hyper_tune
-pipeline_config['model_save_name'] = args.model_save_name
-
-# prep_log(LOG_DIR, model_id)
-WORKER = 'PIPELINE MAIN'
-
 ### Setting Variables
-RANDOM_SEED = training_config['RANDOM_SEED']
-np.random.seed(RANDOM_SEED)
-torch.manual_seed(RANDOM_SEED)
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-training_config['DEVICE'] = device
 
+input_dict = vars(args)
 
-# file names
-dataset_dir = dataset_config["DATASET_DIR"]
-train_file_name = dataset_config["TRAIN_FILE_PATH"]
-val_file_name = dataset_config["VAL_FILE_PATH"]
-
-train_file_path = os.path.join(dataset_dir, train_file_name)
-val_file_path = os.path.join(dataset_dir, val_file_name)
-
-# add training configs
-training_config['EPOCHS'] = args.EPOCH
-training_config['LR'] = args.learning_rate
-training_config['WEIGHT_DECAY'] = args.weight_decay
-training_config['WARMUP_STEPS'] = args.warmup_steps
-training_config['FREEZE_PRETRAINED'] = args.freeze_pretrained
-training_config['BATCH_SIZE'] = args.batch_size
+model_id = shortuuid.ShortUUID().random(length=12)
+input_dict['model_id'] = model_id
 
 
 ## List out config 
-logging.info(f'{WORKER}: Training Config:')
-for key in training_config:
-    logging.info(f'{WORKER}: {key}: {training_config[key]}')
+for key in input_dict:
+    logging.info(f'{WORKER}: {key}: {input_dict[key]}')
 
-logging.info(f'{WORKER}: Dataset Config:')
-for key in dataset_config:
-    logging.info(f'{WORKER}: {key}: {dataset_config[key]}')
-
-logging.info(f'{WORKER}: Pipeline Config:')
-for key in pipeline_config:
-    logging.info(f'{WORKER}: {key}: {pipeline_config[key]}')
 
 
 #################################################################################################################
 ## Getting data 
+df_train, df_val = get_data(args.train_file_path, args.val_file_path)
 
-
-# can change to get using GCS Python client?
-df_train, df_val = get_train_test(train_file_path, val_file_path)
 
 logging.info(f'{WORKER}: Train Data Shape: {df_train.shape}')
 logging.info(f'{WORKER}: Val Data Shape: {df_val.shape}')
@@ -156,21 +144,14 @@ logging.info(f'{WORKER}: Val Data Shape: {df_val.shape}')
 #############################################################################################################################
 # Training pipeline
 
-input_dict = {
-    **training_config, 
-    **pipeline_config,
-    **dataset_config
-    }
-
-input_dict['model_id'] = model_id
-
 if args.mode == 'binary':
     if args.label:
         logging.info(f'{WORKER}: Training Binary Clf on {args.label}...')
         df_train, df_val, label_col, labels_to_indexes = preprocess_binary_clf(df_train, df_val, args.label_col, args.label)
         input_dict['labels_to_indexes'] = labels_to_indexes
         input_dict['focused_indexes'] = None
-        train.run_training_pipeline(df_train, df_val, args.text_col, label_col, **input_dict)
+        input_dict['label_col'] = label_col
+        train.run_training_pipeline(df_train, df_val, **input_dict)
     else:
         logging.info(f'{WORKER}: Need to pass in --label when --mode==binary')
 
@@ -180,4 +161,5 @@ elif args.mode == 'multi':
 
     input_dict['labels_to_indexes'] = labels_to_indexes
     input_dict['focused_indexes'] = focused_indexes
-    train.run_training_pipeline(df_train, df_val, args.text_col, label_col, **input_dict)
+    input_dict['label_col'] = label_col
+    train.run_training_pipeline(df_train, df_val, **input_dict)

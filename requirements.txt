@@ -52,9 +52,16 @@ urllib3==1.26.13
 wcwidth==0.2.5
 widgetsnbextension==4.0.5
 zipp==3.11.0
-pytorch-nlp-pipeline==0.1.9
+pytorch-nlp-pipeline==0.1.16
+sentencepiece
 rich
+
+
+# gcp 
+google-cloud-logging
+google-cloud-bigquery
+opentelemetry-api
+opentelemetry-instrumentation
 gcsfs
 fsspec
 cloudml-hypertune
-google-cloud-logging
