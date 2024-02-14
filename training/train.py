@@ -121,65 +121,66 @@ def run_training_pipeline(df, df_val, **kwargs):
     logging.info(f'{WORKER}: End of Training Result:')
     logging.info(f'{WORKER}: {model_info}')
 
+    if model_info:
 
-    model_info['pretrained_path'] = pretrained_path
-    model_info['head_hidden_layers'] = []
-    model_info['train_file_path'] = kwargs['train_file_path']
-    model_info['val_file_path'] = kwargs['val_file_path']
+        model_info['pretrained_path'] = pretrained_path
+        model_info['head_hidden_layers'] = []
+        model_info['train_file_path'] = kwargs['train_file_path']
+        model_info['val_file_path'] = kwargs['val_file_path']
 
-    files = {
-        'hyperparameters.json': params,
-        'model_info.json': model_info,
-        'labels_to_indexes.json': labels_to_indexes,
-        'indexes_to_labels.json': train_data.indexes_to_labels
-    }
-    save_model(model, model_id, clf.tokenizer, model_cat_uid, save_path, files, save_mode)
+        files = {
+            'hyperparameters.json': params,
+            'model_info.json': model_info,
+            'labels_to_indexes.json': labels_to_indexes,
+            'indexes_to_labels.json': train_data.indexes_to_labels
+        }
+        save_model(model, model_id, clf.tokenizer, model_cat_uid, save_path, files, save_mode)
 
-    val_score = model_info['val_score']
-    model_folder = os.path.join(save_path, model_cat_uid + '-' + model_id)
-
-
-    bq_table = kwargs['bq_table']
-    job_id = kwargs['job_id']
-    if bq_table and job_id:
-        # log saved model to bq table
-        logging.info(f'{WORKER}: Inserting Model Info into BQ table...')
-        bqclient = bigquery.Client(project='ml-mps-aif-afdoor01-p-d1bb')
-
-        query = f"""
-                INSERT
-                    INTO `{bq_table}`
-
-                    VALUES ('{model_id}', 
-                            '{job_id}', 
-                            '{model_cat_uid}', 
-                            '{datetime.now()}', 
-                            '{save_metric}', 
-                            {val_score}, 
-                            '{model_folder}',
-                            '{os.path.basename(pretrained_path)}',
-                            '{dataset_version}'
-                            
-                            )
-
-                """
-
-        results = bqclient.query(query)
+        val_score = model_info['val_score']
+        model_folder = os.path.join(save_path, model_cat_uid + '-' + model_id)
 
 
-    logging.info(f'{WORKER}: Model Saved -- Val Score {val_score}')
-    logging.info(f'{WORKER}: Model Saved -- Val Score {val_score}')
+        bq_table = kwargs['bq_table']
+        job_id = kwargs['job_id']
+        if bq_table and job_id:
+            # log saved model to bq table
+            logging.info(f'{WORKER}: Inserting Model Info into BQ table...')
+            bqclient = bigquery.Client(project='ml-mps-aif-afdoor01-p-d1bb')
 
-    
+            query = f"""
+                    INSERT
+                        INTO `{bq_table}`
 
-    # reporting score to gcp hypertune
-    if hyper_tune:
-        logging.info(f'{WORKER}:Reporting score to hypertune -- metric_name:{save_metric} Score{val_score}')
-        hpt = hypertune.HyperTune()
-        hpt.report_hyperparameter_tuning_metric(
-            hyperparameter_metric_tag=save_metric,
-            metric_value=val_score,
-            global_step=model_info['epoch']
-            )
+                        VALUES ('{model_id}', 
+                                '{job_id}', 
+                                '{model_cat_uid}', 
+                                '{datetime.now()}', 
+                                '{save_metric}', 
+                                {val_score}, 
+                                '{model_folder}',
+                                '{os.path.basename(pretrained_path)}',
+                                '{dataset_version}'
+                                
+                                )
 
-        logging.info(f'{WORKER}: Model Checkpoint Path {model_folder}')
+                    """
+
+            results = bqclient.query(query)
+
+
+        logging.info(f'{WORKER}: Model Saved -- Val Score {val_score}')
+        logging.info(f'{WORKER}: Model Saved -- Val Score {val_score}')
+
+        
+
+        # reporting score to gcp hypertune
+        if hyper_tune:
+            logging.info(f'{WORKER}:Reporting score to hypertune -- metric_name:{save_metric} Score{val_score}')
+            hpt = hypertune.HyperTune()
+            hpt.report_hyperparameter_tuning_metric(
+                hyperparameter_metric_tag=save_metric,
+                metric_value=val_score,
+                global_step=model_info['epoch']
+                )
+
+            logging.info(f'{WORKER}: Model Checkpoint Path {model_folder}')
