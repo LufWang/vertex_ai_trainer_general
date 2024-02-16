@@ -145,7 +145,7 @@ def run_training_pipeline(df, df_val, **kwargs):
         if bq_table and job_id:
             # log saved model to bq table
             logging.info(f'{WORKER}: Inserting Model Info into BQ table...')
-            bqclient = bigquery.Client(project='ml-mps-aif-afdoor01-p-d1bb')
+            bqclient = bigquery.Client(project=kwargs['gcp_project_id'])
 
             query = f"""
                     INSERT

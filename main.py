@@ -111,6 +111,9 @@ parser.add_argument('--bq_table', dest='bq_table',
 parser.add_argument('--dataset_version', dest='dataset_version', 
                         help='dataset version identifier', type=str, required=True)
 
+parser.add_argument('--gcp_project_id', dest='gcp_project_id', 
+                        help='GCP project id', type=str, required=False, default=None)
+
 
 args = parser.parse_args()
 
