@@ -159,7 +159,8 @@ def run_training_pipeline(df, df_val, **kwargs):
                                 {val_score}, 
                                 '{model_folder}',
                                 '{os.path.basename(pretrained_path)}',
-                                '{dataset_version}'
+                                '{dataset_version}',
+                                NULL
                                 
                                 )
 
