@@ -200,7 +200,7 @@ label_counts= pd.Series(dataset['train'][args['label_col']] +
 
 
 for label in indexes_to_labels:
-    class_weight.append(max(label_counts.values()) / label_counts[label])
+    class_weight.append(max(label_counts.values) / label_counts[label])
 
 logging.info(f'{WORKER}: {class_weight}')
     
