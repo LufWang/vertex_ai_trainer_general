@@ -3,7 +3,7 @@ import argparse
 
 
 import pandas as pd
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import precision_score, recall_score, f1_score
 import json
 import shortuuid
 from datasets import load_dataset
@@ -74,8 +74,6 @@ parser.add_argument('--batch_size', dest='batch_size',
 parser.add_argument('--hyper_tune', dest='hyper_tune', 
                         help='whether run vertex ai hypertune', default=False, type=parse_env_bool)
 
-parser.add_argument('--freeze_pretrained', dest='freeze_pretrained', 
-                        help='whether freeze pretrained part', default=False, type=parse_env_bool)
 
 parser.add_argument('--train_file_path', dest='train_file_path', 
                         help='train file path ', type=str, required=True)
