@@ -194,9 +194,9 @@ model = AutoModelForSequenceClassification.from_pretrained(
 )
 
 class_weight = [] 
-label_counts= pd.Series(dataset['train'][args['lbael_col']] + 
-                        dataset_val['train'][['lbael_col']] + 
-                        dataset_test['train'][['lbael_col']]).value_counts()
+label_counts= pd.Series(dataset['train'][args['label_col']] + 
+                        dataset_val['train'][['label_col']] + 
+                        dataset_test['train'][['label_col']]).value_counts()
 
 
 for label in indexes_to_labels:
