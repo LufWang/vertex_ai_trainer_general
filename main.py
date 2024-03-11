@@ -162,7 +162,7 @@ indexes_to_labels = {v:k for k,v in labels_to_indexes.items()}
 ## List to label to indexes 
 logging.info('Labels to Indexes:')
 for key in labels_to_indexes:
-    logging.info(f'{WORKER}: {key}: {args[key]}')
+    logging.info(f'{WORKER}: {key}: {labels_to_indexes[key]}')
 
 focused_labels = args.get('focused_labels', None)
 if focused_labels:
@@ -201,6 +201,8 @@ label_counts= pd.Series(dataset['train'][args['lbael_col']] +
 
 for label in indexes_to_labels:
     class_weight.append(max(label_counts.values()) / label_counts[label])
+
+logging.info(f'{WORKER}: {class_weight}')
     
 loss_fn = nn.CrossEntropyLoss(
                             weight = torch.tensor(class_weight)
