@@ -2,7 +2,7 @@
 #ML
 pandas
 transformers[torch]
-torch
+torch==1.13
 shortuuid
 datasets
 evaluate

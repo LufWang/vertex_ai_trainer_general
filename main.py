@@ -23,29 +23,6 @@ from utils import parse_env_bool
 
 import shortuuid
 
-#######
-# Set up Logging
-########
-import google.cloud.logging_v2 as logging_v2
-import logging
-client = logging_v2.client.Client()
-# set the format for the log
-google_log_format= logging.Formatter(
-fmt='%(name)s | %(module)s | %(funcName)s | %(message)s',
-datefmt='%Y-%m-$dT%H:%M:%S')
-
-
-handler = client.get_default_handler()
-handler.setFormatter(google_log_format)
-
-cloud_logger = logging.getLogger("vertex-ai-job-logger")
-cloud_logger.setLevel("INFO")
-cloud_logger.addHandler(handler)
-
-
-log = logging.getLogger("vertex-ai-job-logger")
-
-WORKER = 'PIPELINE MAIN'
 
   
 
@@ -138,6 +115,18 @@ parser.add_argument('--gcp_project_id', dest='gcp_project_id',
 
 args = parser.parse_args()
 
+#######
+# Set up Logging
+########
+import google.cloud.logging
+import logging
+client = google.cloud.logging.Client(project=args.gcp_project_id)
+# set the format for the log
+client.setup_logging()
+
+
+WORKER = 'PIPELINE MAIN'
+
 
 ### Setting Variables
 
@@ -149,11 +138,11 @@ args['model_id'] = model_id
 
 ## List out config 
 for key in args:
-    log.info(f'{WORKER}: {key}: {args[key]}')
+    logging.info(f'{WORKER}: {key}: {args[key]}')
 
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-log.info(f'DEVICE: {device}')
+logging.info(f'DEVICE: {device}')
 
 #################################################################################################################
 ## Getting data 
@@ -179,17 +168,17 @@ labels_to_indexes = {v: k for k, v in enumerate(labels)}
 indexes_to_labels = {v:k for k,v in labels_to_indexes.items()}
 
 ## List to label to indexes 
-log.info('Labels to Indexes:')
+logging.info('Labels to Indexes:')
 for key in labels_to_indexes:
-    log.info(f'{WORKER}: {key}: {labels_to_indexes[key]}')
+    logging.info(f'{WORKER}: {key}: {labels_to_indexes[key]}')
 
 focused_labels = args.get('focused_labels', None)
-log.info(f'focused_labels: {focused_labels}')
+logging.info(f'focused_labels: {focused_labels}')
 if focused_labels:
     focused_indexes = [labels_to_indexes[label] for label in focused_labels]
 else:
     focused_indexes = None
-log.info(f'focused_ indexes: {focused_indexes}')
+logging.info(f'focused_ indexes: {focused_indexes}')
 
 
 def compute_metrics(eval_pred):
@@ -225,7 +214,7 @@ label_counts= pd.Series(dataset['train'][args['label_col']] +
 for label in labels_to_indexes:
     class_weight.append(float(max(label_counts.values) / label_counts[label]))
 
-log.info(f'{WORKER}: class weights: {class_weight}')
+logging.info(f'{WORKER}: class weights: {class_weight}')
     
 loss_fn = nn.CrossEntropyLoss(
                             weight = torch.tensor(class_weight)
