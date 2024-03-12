@@ -172,7 +172,7 @@ logging.info('Labels to Indexes:')
 for key in labels_to_indexes:
     logging.info(f'{WORKER}: {key}: {labels_to_indexes[key]}')
 
-focused_labels = args.get('focused_labels', None)
+focused_labels = args.get('focused_label', None)
 logging.info(f'focused_labels: {focused_labels}')
 if focused_labels:
     focused_indexes = [labels_to_indexes[label] for label in focused_labels]
