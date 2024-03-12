@@ -12,8 +12,11 @@ from transformers import AutoTokenizer
 import evaluate
 import numpy as np
 from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer
+from transformers import TrainerCallback
 from torch import nn
 import torch
+from google.cloud import bigquery
+from datetime import datetime
 
 
 
@@ -239,7 +242,7 @@ model_out_path = args['save_path']
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 training_args = TrainingArguments(
-    output_dir='checkpoints',
+    output_dir=model_out_path,
     learning_rate=2e-5,
     per_device_train_batch_size=16,
     per_device_eval_batch_size=16,
@@ -249,16 +252,24 @@ training_args = TrainingArguments(
     eval_steps=2000,
     save_strategy="steps",
     save_steps=2000,
+    save_total_limit=3,
+    logging_steps=2000,
     load_best_model_at_end=True,
     dataloader_num_workers=2,
     dataloader_prefetch_factor=2,
     metric_for_best_model='f1',
     greater_is_better=True,
-    log_level='info'
+    log_level='info',
+    save_metrics='val'
     
 )
 
 model = model.to(device)
+
+eval_metrics = []
+class EvalCallback(TrainerCallback):
+    def on_evaluate(self, args, state, control, metrics, logs=None, **kwargs):
+        eval_metrics.append(metrics)
 
 trainer = DFDTrainer(
     model=model,
@@ -267,7 +278,8 @@ trainer = DFDTrainer(
     eval_dataset=tokenized_data_val['train'],
     tokenizer=tokenizer,
     data_collator=data_collator,
-    compute_metrics=compute_metrics
+    compute_metrics=compute_metrics,
+    callbacks=[EvalCallback]
 )
 
 trainer.train()
@@ -312,3 +324,36 @@ with open(os.path.join(model_out_path, f'{model_id}-labels_to_indexes.json'), 'w
 
 with open(os.path.join(model_out_path, f'{model_id}-indexes_to_labels.json'), 'w') as f:
     json.dump(indexes_to_labels, f)
+
+with open(os.path.join(model_out_path, f'{model_id}-eval_metrics.json'), 'w') as f:
+    json.dump(eval_metrics, f)
+
+
+## Step 7: Log trained model info into BQ if job id passed in
+if args.get('bq_table', None) and args.get('job_id', None):
+    # if local_rank == 0: # only save the main process to avoid duplicates in logs
+        # log saved model to bq table
+        logging.info(f'{WORKER}: Inserting Model Info into BQ table...')
+        bqclient = bigquery.Client(project=args.get('gcp_project_id', None))
+
+        query = f"""
+                INSERT
+                    INTO `{args['bq_table']}`
+
+                    VALUES ('{model_id}', 
+                            '{args['job_id']}', 
+                            '{args['model_cat_uid']}', 
+                            '{datetime.now()}', 
+                            'f1', 
+                            {max([e['eval_f1'] for e in eval_metrics])}, 
+                            '{model_out_path}',
+                            '{args['pretrained_path']}',
+                            '{args['dataset_version']}',
+                            '{os.path.join(model_out_path, f'{model_id}-eval_predictions.json')}',
+                            JSON '{eval_metrics}'
+                            
+                            )
+
+                """
+
+        results = bqclient.query(query)
