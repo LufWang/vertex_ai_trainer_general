@@ -27,6 +27,7 @@ import shortuuid
 # Set up Logging
 ########
 import google.cloud.logging_v2 as logging_v2
+import logging
 client = logging_v2.client.Client()
 # set the format for the log
 google_log_format= logging.Formatter(
@@ -41,7 +42,7 @@ cloud_logger = logging.getLogger("vertex-ai-job-logger")
 cloud_logger.setLevel("INFO")
 cloud_logger.addHandler(handler)
 
-import logging
+
 log = logging.getLogger("vertex-ai-job-logger")
 
 WORKER = 'PIPELINE MAIN'
