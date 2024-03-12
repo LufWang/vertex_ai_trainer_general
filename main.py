@@ -259,8 +259,7 @@ training_args = TrainingArguments(
     dataloader_prefetch_factor=2,
     metric_for_best_model='f1',
     greater_is_better=True,
-    log_level='info',
-    save_metrics='val'
+    log_level='info'
     
 )
 
