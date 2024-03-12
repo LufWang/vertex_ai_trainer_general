@@ -15,7 +15,7 @@ from transformers import AutoModelForSequenceClassification, TrainingArguments, 
 from torch import nn
 import torch
 
-import logging
+
 
 import os
 
@@ -26,6 +26,11 @@ import shortuuid
 #######
 # Set up Logging
 ########
+import google.cloud.logging
+client = google.cloud.logging.Client()
+client.setup_logging()
+
+import logging
 WORKER = 'PIPELINE MAIN'
 logging.basicConfig(encoding='utf-8', level=logging.DEBUG)
 
@@ -135,6 +140,7 @@ for key in args:
 
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+logging.info(f'DEVICE: {device}')
 
 #################################################################################################################
 ## Getting data 
@@ -165,8 +171,12 @@ for key in labels_to_indexes:
     logging.info(f'{WORKER}: {key}: {labels_to_indexes[key]}')
 
 focused_labels = args.get('focused_labels', None)
+logging.info(f'focused_labels: {focused_labels}')
 if focused_labels:
     focused_indexes = [labels_to_indexes[label] for label in focused_labels]
+else:
+    focused_indexes = None
+logging.info(f'focused_ indexes: {focused_indexes}')
 
 
 def compute_metrics(eval_pred):
@@ -202,7 +212,7 @@ label_counts= pd.Series(dataset['train'][args['label_col']] +
 for label in labels_to_indexes:
     class_weight.append(float(max(label_counts.values) / label_counts[label]))
 
-logging.info(f'{WORKER}: {class_weight}')
+logging.info(f'{WORKER}: class weights: {class_weight}')
     
 loss_fn = nn.CrossEntropyLoss(
                             weight = torch.tensor(class_weight)
@@ -227,7 +237,7 @@ model_out_path = args['save_path']
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 training_args = TrainingArguments(
-    output_dir=model_out_path,
+    output_dir='checkpoints',
     learning_rate=2e-5,
     per_device_train_batch_size=16,
     per_device_eval_batch_size=16,
@@ -241,7 +251,8 @@ training_args = TrainingArguments(
     dataloader_num_workers=2,
     dataloader_prefetch_factor=2,
     metric_for_best_model='f1',
-    greater_is_better=True
+    greater_is_better=True,
+    log_level='info'
     
 )
 
@@ -283,9 +294,11 @@ df_pred.to_csv(os.path.join(model_out_path, f'{model_id}-predictions.csv'))
 predictions_json = {}
 texts = tokenized_dataset_all['train']['cleaned_text']
 pred_proba_all = predictions.predictions
+m = nn.Softmax(dim=0)
 for i in range(len(texts)):
     pred_proba = pred_proba_all[i]
-    pred_proba = [float(x) for x in pred_proba]
+    pred_proba = m(torch.tensor(pred_proba)).tolist()
+
     predictions_json[texts[i]] = pred_proba
 
 with open(os.path.join(model_out_path, f'{model_id}-eval_predictions.json'), 'w') as f:
