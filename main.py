@@ -26,13 +26,25 @@ import shortuuid
 #######
 # Set up Logging
 ########
-import google.cloud.logging
-client = google.cloud.logging.Client()
-client.setup_logging()
+import google.cloud.logging_v2 as logging_v2
+client = logging_v2.client.Client()
+# set the format for the log
+google_log_format= logging.Formatter(
+fmt='%(name)s | %(module)s | %(funcName)s | %(message)s',
+datefmt='%Y-%m-$dT%H:%M:%S')
+
+
+handler = client.get_default_handler()
+handler.setFormatter(google_log_format)
+
+cloud_logger = logging.getLogger("vertex-ai-job-logger")
+cloud_logger.setLevel("INFO")
+cloud_logger.addHandler(handler)
 
 import logging
+log = logging.getLogger("vertex-ai-job-logger")
+
 WORKER = 'PIPELINE MAIN'
-logging.basicConfig(encoding='utf-8', level=logging.DEBUG)
 
   
 
@@ -136,11 +148,11 @@ args['model_id'] = model_id
 
 ## List out config 
 for key in args:
-    logging.info(f'{WORKER}: {key}: {args[key]}')
+    log.info(f'{WORKER}: {key}: {args[key]}')
 
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-logging.info(f'DEVICE: {device}')
+log.info(f'DEVICE: {device}')
 
 #################################################################################################################
 ## Getting data 
@@ -166,17 +178,17 @@ labels_to_indexes = {v: k for k, v in enumerate(labels)}
 indexes_to_labels = {v:k for k,v in labels_to_indexes.items()}
 
 ## List to label to indexes 
-logging.info('Labels to Indexes:')
+log.info('Labels to Indexes:')
 for key in labels_to_indexes:
-    logging.info(f'{WORKER}: {key}: {labels_to_indexes[key]}')
+    log.info(f'{WORKER}: {key}: {labels_to_indexes[key]}')
 
 focused_labels = args.get('focused_labels', None)
-logging.info(f'focused_labels: {focused_labels}')
+log.info(f'focused_labels: {focused_labels}')
 if focused_labels:
     focused_indexes = [labels_to_indexes[label] for label in focused_labels]
 else:
     focused_indexes = None
-logging.info(f'focused_ indexes: {focused_indexes}')
+log.info(f'focused_ indexes: {focused_indexes}')
 
 
 def compute_metrics(eval_pred):
@@ -212,7 +224,7 @@ label_counts= pd.Series(dataset['train'][args['label_col']] +
 for label in labels_to_indexes:
     class_weight.append(float(max(label_counts.values) / label_counts[label]))
 
-logging.info(f'{WORKER}: class weights: {class_weight}')
+log.info(f'{WORKER}: class weights: {class_weight}')
     
 loss_fn = nn.CrossEntropyLoss(
                             weight = torch.tensor(class_weight)
@@ -270,6 +282,7 @@ trainer = DFDTrainer(
 
 trainer.train()
 
+### save best model 
 trainer.save_model(model_out_path)
 
 # Run predictions 
