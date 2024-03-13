@@ -57,10 +57,10 @@ parser.add_argument('--num_epochs', dest='num_epochs',
                         help='how many epochs to run', default=1, type=int)
 
 parser.add_argument('--learning_rate', dest='learning_rate', 
-                        help='how many epochs to run', default=0.0001, type=float)
+                        help='how many epochs to run', default=2e-5, type=float)
 
 parser.add_argument('--weight_decay', dest='weight_decay', 
-                        help='how many epochs to run', default=0.001, type=float)
+                        help='how many epochs to run', default=0.01, type=float)
 
 parser.add_argument('--warmup_steps', dest='warmup_steps', 
                         help='how many epochs to run', default=0, type=int)
@@ -270,6 +270,7 @@ eval_metrics = []
 class EvalCallback(TrainerCallback):
     def on_evaluate(self, args, state, control, metrics, logs=None, **kwargs):
         eval_metrics.append(metrics)
+        logging.info(f'{WORKER}: Eval Metric: {metrics}')
 
 trainer = DFDTrainer(
     model=model,
@@ -339,7 +340,7 @@ if args.get('bq_table', None) and args.get('job_id', None):
         # log saved model to bq table
         logging.info(f'{WORKER}: Inserting Model Info into BQ table...')
         bqclient = bigquery.Client(project=args.get('gcp_project_id', None))
-
+        # TODO Parmetimized
         query = f"""
                 INSERT
                     INTO `{args['bq_table']}`
