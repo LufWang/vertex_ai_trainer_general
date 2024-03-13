@@ -242,6 +242,8 @@ model_out_path = args['save_path']
 model_out_path = os.path.join(model_out_path, f"{args['model_cat_uid']}-{model_id}")
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
+step = 1/args['eval_freq']
+logging.info(f'{WORKER}: Evaluating, checkpointing, loggig every {step} of the total steps')
 training_args = TrainingArguments(
     output_dir=model_out_path,
     learning_rate=args['learning_rate'],
@@ -250,11 +252,11 @@ training_args = TrainingArguments(
     num_train_epochs=args['num_epochs'],
     weight_decay=args['weight_decay'],
     evaluation_strategy="steps",
-    eval_steps=1/args['eval_freq'],
+    eval_steps=step,
     save_strategy="steps",
-    save_steps=1/args['eval_freq'],
+    save_steps=step,
     save_total_limit=3,
-    logging_steps=1/args['eval_freq'],
+    logging_steps=step,
     load_best_model_at_end=True,
     dataloader_num_workers=2,
     dataloader_prefetch_factor=2,
