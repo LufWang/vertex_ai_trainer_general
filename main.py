@@ -239,15 +239,16 @@ class DFDTrainer(Trainer):
 # Training
 #######
 model_out_path = args['save_path']
+model_out_path = os.path.join(model_out_path, f'{args['model_cat_uid']}-{model_id}')
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 training_args = TrainingArguments(
     output_dir=model_out_path,
-    learning_rate=2e-5,
-    per_device_train_batch_size=16,
-    per_device_eval_batch_size=16,
-    num_train_epochs=4,
-    weight_decay=0.01,
+    learning_rate=args['learning_rate'],
+    per_device_train_batch_size=args['batch_size'],
+    per_device_eval_batch_size=args['batch_size'],
+    num_train_epochs=args['num_epochs'],
+    weight_decay=args['weight_decay'],
     evaluation_strategy="steps",
     eval_steps=2000,
     save_strategy="steps",
@@ -287,6 +288,10 @@ trainer.train()
 trainer.save_model(model_out_path)
 
 # Run predictions 
+df_train = pd.read_csv(args['train_file_path'])
+df_val = pd.read_csv(args['val_file_path'])
+df_test = pd.read_csv(args['test_file_path'])
+pd.concat([df_test, df_val, df_train]).to_csv('all.csv') # TODO can be optimized
 dataset_all = load_dataset("csv", data_files='all.csv')
 tokenized_dataset_all = dataset_all.map(text_preprocess_function, batched=True)
 tokenized_dataset_all = tokenized_dataset_all.map(preprocess_function)
