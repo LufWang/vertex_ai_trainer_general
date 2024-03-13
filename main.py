@@ -250,11 +250,11 @@ training_args = TrainingArguments(
     num_train_epochs=args['num_epochs'],
     weight_decay=args['weight_decay'],
     evaluation_strategy="steps",
-    eval_steps=2000,
+    eval_steps=1/args['eval_freq'],
     save_strategy="steps",
-    save_steps=2000,
+    save_steps=1/args['eval_freq'],
     save_total_limit=3,
-    logging_steps=2000,
+    logging_steps=1/args['eval_freq'],
     load_best_model_at_end=True,
     dataloader_num_workers=2,
     dataloader_prefetch_factor=2,
@@ -303,8 +303,8 @@ preds_proba, preds = torch.max(m(torch.tensor(predictions.predictions)), dim=1)
 
 
 df_pred = pd.DataFrame({
-        "text": tokenized_dataset_all['train']['cleaned_text'],
-        "label": tokenized_dataset_all['train']['new_label'],
+        "text": tokenized_dataset_all['train'][args['text_col']],
+        "label": tokenized_dataset_all['train'][args['label_col']],
         "pred": [indexes_to_labels[pred] for pred in preds.tolist()]
 })
 
