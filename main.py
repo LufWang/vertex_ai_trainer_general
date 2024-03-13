@@ -239,7 +239,7 @@ class DFDTrainer(Trainer):
 # Training
 #######
 model_out_path = args['save_path']
-model_out_path = os.path.join(model_out_path, f'{args['model_cat_uid']}-{model_id}')
+model_out_path = os.path.join(model_out_path, f"{args['model_cat_uid']}-{model_id}")
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 training_args = TrainingArguments(
