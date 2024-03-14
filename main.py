@@ -128,7 +128,7 @@ client = google.cloud.logging.Client(project=args.gcp_project_id)
 client.setup_logging()
 
 
-WORKER = 'PIPELINE MAIN'
+WORKER = 'VERTEX AI TRAINER'
 
 
 ### Setting Variables
@@ -285,12 +285,14 @@ trainer = DFDTrainer(
     callbacks=[EvalCallback]
 )
 
+logging.info(f'{WORKER}: Running Training....')
 trainer.train()
 
 ### save best model 
 trainer.save_model(model_out_path)
 
 # Run predictions 
+logging.info(f'{WORKER}: Finished Training...Running Predictions....')
 df_train = pd.read_csv(args['train_file_path'])
 df_val = pd.read_csv(args['val_file_path'])
 df_test = pd.read_csv(args['test_file_path'])
@@ -303,7 +305,7 @@ predictions = trainer.predict(tokenized_dataset_all['train'])
 m = nn.Softmax(dim=1)
 preds_proba, preds = torch.max(m(torch.tensor(predictions.predictions)), dim=1)
 
-
+logging.info(f"{WORKER}: text_col: {args['text_col']}  label_col: {args['label_col']}")
 df_pred = pd.DataFrame({
         "text": tokenized_dataset_all['train'][args['text_col']],
         "label": tokenized_dataset_all['train'][args['label_col']],
@@ -323,6 +325,8 @@ for i in range(len(texts)):
 
     predictions_json[texts[i]] = pred_proba
 
+logging.info(f'{WORKER}: Saving model files....')
+
 with open(os.path.join(model_out_path, f'{model_id}-eval_predictions.json'), 'w') as f:
     json.dump(predictions_json, f)
     
@@ -338,29 +342,30 @@ with open(os.path.join(model_out_path, f'{model_id}-eval_metrics.json'), 'w') as
 
 ## Step 7: Log trained model info into BQ if job id passed in
 if args.get('bq_table', None) and args.get('job_id', None):
-    # if local_rank == 0: # only save the main process to avoid duplicates in logs
-        # log saved model to bq table
-        logging.info(f'{WORKER}: Inserting Model Info into BQ table...')
-        bqclient = bigquery.Client(project=args.get('gcp_project_id', None))
-        # TODO Parmetimized
-        query = f"""
-                INSERT
-                    INTO `{args['bq_table']}`
+    logging.info(f'{WORKER}: inserting trained model info into BQ....')
+# if local_rank == 0: # only save the main process to avoid duplicates in logs
+    # log saved model to bq table
+    logging.info(f'{WORKER}: Inserting Model Info into BQ table...')
+    bqclient = bigquery.Client(project=args.get('gcp_project_id', None))
+    # TODO Parmetimized
+    query = f"""
+            INSERT
+                INTO `{args['bq_table']}`
 
-                    VALUES ('{model_id}', 
-                            '{args['job_id']}', 
-                            '{args['model_cat_uid']}', 
-                            '{datetime.now()}', 
-                            'f1', 
-                            {max([e['eval_f1'] for e in eval_metrics])}, 
-                            '{model_out_path}',
-                            '{args['pretrained_path']}',
-                            '{args['dataset_version']}',
-                            '{os.path.join(model_out_path, f'{model_id}-eval_predictions.json')}',
-                            JSON '{eval_metrics}'
-                            
-                            )
+                VALUES ('{model_id}', 
+                        '{args['job_id']}', 
+                        '{args['model_cat_uid']}', 
+                        '{datetime.now()}', 
+                        'f1', 
+                        {max([e['eval_f1'] for e in eval_metrics])}, 
+                        '{model_out_path}',
+                        '{args['pretrained_path']}',
+                        '{args['dataset_version']}',
+                        '{os.path.join(model_out_path, f'{model_id}-eval_predictions.json')}',
+                        JSON '{eval_metrics}'
+                        
+                        )
 
-                """
+            """
 
-        results = bqclient.query(query)
+    results = bqclient.query(query)
