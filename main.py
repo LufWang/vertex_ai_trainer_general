@@ -176,12 +176,12 @@ for key in labels_to_indexes:
     logging.info(f'{WORKER}: {key}: {labels_to_indexes[key]}')
 
 focused_labels = args.get('focused_label', None)
-logging.info(f'focused_labels: {focused_labels}')
+logging.info(f'{WORKER}: focused_labels: {focused_labels}')
 if focused_labels:
     focused_indexes = [labels_to_indexes[label] for label in focused_labels]
 else:
     focused_indexes = None
-logging.info(f'focused_ indexes: {focused_indexes}')
+logging.info(f'{WORKER}: focused_ indexes: {focused_indexes}')
 
 
 def compute_metrics(eval_pred):
@@ -223,6 +223,7 @@ loss_fn = nn.CrossEntropyLoss(
                             weight = torch.tensor(class_weight)
                             ).to(device)
 
+## customize Trainer
 class DFDTrainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False):
         labels = inputs.pop("labels")
@@ -242,8 +243,9 @@ model_out_path = args['save_path']
 model_out_path = os.path.join(model_out_path, f"{args['model_cat_uid']}-{model_id}")
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
-step = 1/args['eval_freq']
+step = 1/(args['eval_freq'] * args['num_epochs'])
 logging.info(f'{WORKER}: Evaluating, checkpointing, loggig every {step} of the total steps')
+logging.info(f'{WORKER}: Evaluating, checkpointing, loggig {args["eval_freq"]} time(s) every epoch')
 training_args = TrainingArguments(
     output_dir=model_out_path,
     learning_rate=args['learning_rate'],
@@ -268,6 +270,7 @@ training_args = TrainingArguments(
 
 model = model.to(device)
 
+# customize callback
 eval_metrics = []
 class EvalCallback(TrainerCallback):
     def on_evaluate(self, args, state, control, metrics, logs=None, **kwargs):
@@ -359,13 +362,16 @@ if args.get('bq_table', None) and args.get('job_id', None):
                         'f1', 
                         {max([e['eval_f1'] for e in eval_metrics])}, 
                         '{model_out_path}',
-                        '{args['pretrained_path']}',
+                        '{os.path.basename(args["pretrained_path"])}',
                         '{args['dataset_version']}',
                         '{os.path.join(model_out_path, f'{model_id}-eval_predictions.json')}',
-                        JSON '{eval_metrics}'
+                        JSON '{json.dumps(eval_metrics)}'
                         
                         )
 
             """
 
     results = bqclient.query(query)
+
+    for row in results:
+        print(row)
